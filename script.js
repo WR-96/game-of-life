@@ -2,11 +2,13 @@ var canvas, ctx, w, h;
 var cellSize = 25;
 
 class Cell {
-    constructor(xCoord, yCoord, size, isAlive, neighbours, ) {
+    constructor(xCoord, yCoord, size, isAlive = false, nearbyCells = 0, neighbours = []) {
+        //Recibe an objecto coord with the x and y position of the cell
         this.xCoord = xCoord;
         this.yCoord = yCoord;
         this.size = size;
         this.isAlive = isAlive;
+        this.nearbyCells = nearbyCells;
         this.neighbours = neighbours;
     }
 
@@ -25,17 +27,8 @@ class Cell {
         ctx.restore();
     }
 
-    notifyNeighbours(isAlive) {
-        // If the cell is alive then he tells is neighbours
-        if (isAlive) {
-
-        }
-
-    }
-
     changeStatus() {
         this.isAlive = !this.isAlive;
-        this.notifyNeighbours(this.isAlive);
     }
 
 }
@@ -47,19 +40,58 @@ class CellManager {
     }
 
     cellClicked(x, y) {
-        for (var i = 0; i < CellManager.cells.length; i++) {
-            for (var j = 0; j < CellManager.cells[i].length; j++) {
-                var cell = CellManager.cells[i][j];
+        for (var row = 0; row < CellManager.cells.length; row++) {
+            for (var column = 0; column < CellManager.cells[row].length; column++) {
+                var cell = CellManager.cells[row][column];
                 if (
                     inRange(x, cell.xCoord, cell.xCoord + cell.size) &&
                     inRange(y, cell.yCoord, cell.yCoord + cell.size)
                 ) {
                     console.log('cell clicked found');
-                    console.log('Cell array row: ' + i + ', column: ' + j);
+                    console.log('Cell array row: ' + row + ', column: ' + column);
+                    console.log('This cell has ' + cell.neighbours.length + ' neighbours');
                     cell.changeStatus();
+                    this.notifyNeighbours(cell);
                     console.log('cell status is alive: ' + cell.isAlive);
                     (cell.isAlive) ? cell.draw(ctx) : cell.clear(ctx);
                     break;
+                }
+            }
+        }
+    }
+
+    notifyNeighbours(cell) {
+        cell.neighbours.forEach(function(neighbour) {
+            (cell.isAlive) ? neighbour.nearbyCells++ : neighbour.nearbyCells--;
+            console.log('This cell now has ' + neighbour.nearbyCells +' neighbours alive');
+        });
+    }
+
+    setNeighbours() {
+        var rowsLimit = CellManager.cells.length - 1;
+        var columnsLimit = CellManager.cells[0].length - 1;
+
+        for (var row = 0; row < CellManager.cells.length; row++) {
+            var firstRow = clamp(row - 1, 0, rowsLimit);
+            var lastRow = clamp(row + 1, 0, rowsLimit);
+
+            for (var column = 0; column < CellManager.cells[row].length; column++) {
+                var cell = CellManager.cells[row][column];
+
+                var firstColumn = clamp(column - 1, 0, columnsLimit);
+                var lastColumn = clamp(column + 1, 0, columnsLimit);
+
+                fillNeighboursArray();
+            }
+        }
+
+        function fillNeighboursArray() {
+            for (var i = firstRow; i <= lastRow; i++) {
+
+                for (var j = firstColumn; j <= lastColumn; j++) {
+                    //The cell does not have to count hiself as a neighbour
+                    if (CellManager.cells[row][column] !== CellManager.cells[i][j])
+                        cell.neighbours.push(CellManager.cells[i][j]);
                 }
             }
         }
@@ -108,13 +140,12 @@ function createAllCells(cellSize) {
     for (var j = 0; j <= h - cellSize; j += cellSize) {
         var cellsRow = []
         for (var i = 0; i <= w - cellSize; i += cellSize) {
-            var cell = new Cell(i, j, cellSize, false, 0);
+            var cell = new Cell(i, j, cellSize);
             cellsRow.push(cell);
         }
         cellManager.add(cellsRow);
     }
-
-
+    cellManager.setNeighbours();
 }
 
 function mouseCliked(evt) {
