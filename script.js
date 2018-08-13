@@ -25,12 +25,17 @@ class Cell {
         ctx.restore();
     }
 
-    greetNeighbours() {
+    notifyNeighbours(isAlive) {
         // If the cell is alive then he tells is neighbours
+        if (isAlive) {
+
+        }
+
     }
 
     changeStatus() {
         this.isAlive = !this.isAlive;
+        this.notifyNeighbours(this.isAlive);
     }
 
 }
@@ -42,15 +47,12 @@ class CellManager {
     }
 
     cellClicked(x, y) {
-        console.log(CellManager.cells.length);
         for (var i = 0; i < CellManager.cells.length; i++) {
             for (var j = 0; j < CellManager.cells[i].length; j++) {
                 var cell = CellManager.cells[i][j];
                 if (
-                    x > cell.xCoord &&
-                    x < cell.xCoord + cell.size &&
-                    y > cell.yCoord &&
-                    y < cell.yCoord + cell.size
+                    inRange(x, cell.xCoord, cell.xCoord + cell.size) &&
+                    inRange(y, cell.yCoord, cell.yCoord + cell.size)
                 ) {
                     console.log('cell clicked found');
                     console.log('Cell array row: ' + i + ', column: ' + j);
@@ -127,4 +129,12 @@ function getMousePos(canvas, evt) {
         x: evt.clientX - rect.left,
         y: evt.clientY - rect.top
     };
+}
+
+function clamp(number, min, max) {
+    return Math.max(Math.min(number, max), min);
+}
+
+function inRange(number, min, max) {
+    return number > min && number < max;
 }
