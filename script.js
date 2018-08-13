@@ -12,17 +12,17 @@ class Cell {
 
     draw(ctx) {
         ctx.save();
-        ctx.fillStyle = "#33cc33";
-        ctx.translate(this.xCoord, this.yCoord);
-        ctx.fillRect(0, 0, this.size, this.size);
+        ctx.fillStyle = '#33cc33';
+        ctx.translate(this.xCoord + 1, this.yCoord + 1);
+        ctx.fillRect(0, 0, this.size - 2, this.size - 2);
         ctx.restore();
     }
 
     clear(ctx) {
         ctx.save();
-        ctx.translate(this.xCoord, this.yCoord);
-        ctx.clearRect(0, 0, this.size, this.size);
-        ctx.restore(); 
+        ctx.translate(this.xCoord + 1, this.yCoord + 1);
+        ctx.clearRect(0, 0, this.size - 2, this.size - 2);
+        ctx.restore();
     }
 
     greetNeighbours() {
@@ -43,19 +43,22 @@ class CellManager {
 
     cellClicked(x, y) {
         console.log(CellManager.cells.length);
-        for(var i = 0; i < CellManager.cells.length; i++) {
-            var cell = CellManager.cells[i];
-            if (
-                x > cell.xCoord &&
-                x < cell.xCoord + cell.size &&
-                y > cell.yCoord &&
-                y < cell.yCoord + cell.size
-            ) {
-                console.log("cell clicked found");
-                cell.changeStatus();
-                console.log("cell status is alive: "+cell.isAlive);
-                (cell.isAlive) ? cell.draw(ctx) : cell.clear(ctx);
-                break;
+        for (var i = 0; i < CellManager.cells.length; i++) {
+            for (var j = 0; j < CellManager.cells[i].length; j++) {
+                var cell = CellManager.cells[i][j];
+                if (
+                    x > cell.xCoord &&
+                    x < cell.xCoord + cell.size &&
+                    y > cell.yCoord &&
+                    y < cell.yCoord + cell.size
+                ) {
+                    console.log('cell clicked found');
+                    console.log('Cell array row: ' + i + ', column: ' + j);
+                    cell.changeStatus();
+                    console.log('cell status is alive: ' + cell.isAlive);
+                    (cell.isAlive) ? cell.draw(ctx) : cell.clear(ctx);
+                    break;
+                }
             }
         }
     }
@@ -66,9 +69,12 @@ CellManager.cells = [];
 var cellManager = new CellManager();
 
 window.onload = function init() {
-    canvas = document.querySelector("#board");
+    canvas = document.querySelector('#board');
     canvas.addEventListener('click', mouseCliked);
-    
+
+    var btnNext = document.querySelector('#btnNext');
+    // btnNext.onclick = cellManager.next();
+
     w = canvas.width;
     h = canvas.height;
 
@@ -79,29 +85,31 @@ window.onload = function init() {
     createAllCells(cellSize);
 }
 
-function drawGrid (sqrSize) {
+function drawGrid(sqrSize) {
     ctx.save();
     for (var x = sqrSize; x <= w - sqrSize; x += sqrSize) {
-        ctx.moveTo(x,0);
-        ctx.lineTo(x,h);
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
     }
-    
+
     for (var y = sqrSize; y <= h - sqrSize; y += sqrSize) {
-        ctx.moveTo(0,y);
+        ctx.moveTo(0, y);
         ctx.lineTo(w, y)
     }
 
-    ctx.strokeStyle =" #00008B";
+    ctx.strokeStyle = '#00008B';
     ctx.stroke();
     ctx.restore;
 }
 
 function createAllCells(cellSize) {
-    for (var i = 0; i <= w - cellSize; i += cellSize) {
-        for(var j = 0; j <= h - cellSize; j += cellSize) {
+    for (var j = 0; j <= h - cellSize; j += cellSize) {
+        var cellsRow = []
+        for (var i = 0; i <= w - cellSize; i += cellSize) {
             var cell = new Cell(i, j, cellSize, false, 0);
-            cellManager.add(cell);
+            cellsRow.push(cell);
         }
+        cellManager.add(cellsRow);
     }
 
 
@@ -109,7 +117,7 @@ function createAllCells(cellSize) {
 
 function mouseCliked(evt) {
     var mousePos = getMousePos(canvas, evt);
-    console.log('Mouse clicked in position x: '+mousePos.x+', y: '+mousePos.y);
+    console.log('Mouse clicked in position x: ' + mousePos.x + ', y: ' + mousePos.y);
     cellManager.cellClicked(mousePos.x, mousePos.y);
 }
 
