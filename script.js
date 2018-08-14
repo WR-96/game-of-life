@@ -1,9 +1,9 @@
+// TODO make a button to clear the canvas and kill all the cells on the board
 var canvas, ctx, w, h;
 var cellSize = 25;
 
 class Cell {
     constructor(xCoord, yCoord, size, isAlive = false, nearbyCells = 0, neighbours = []) {
-        //Recibe an objecto coord with the x and y position of the cell
         this.xCoord = xCoord;
         this.yCoord = yCoord;
         this.size = size;
@@ -29,20 +29,29 @@ class Cell {
 
     changeStatus() {
         this.isAlive = !this.isAlive;
+        (this.isAlive) ? this.draw(ctx) : this.clear(ctx);
+    }
+
+    setStatus(alive) {
+        this.isAlive = alive;
+        (this.isAlive) ? this.draw(ctx) : this.clear(ctx);
     }
 
 }
 
-//Sall we add the 'ctx' as a property of this class?
-class CellManager {
+class BoardManager {
+    constructor (ctx) {
+        this.ctx = ctx;
+    }
+
     add(cell) {
-        CellManager.cells.push(cell);
+        BoardManager.cells.push(cell);
     }
 
     cellClicked(x, y) {
-        for (var row = 0; row < CellManager.cells.length; row++) {
-            for (var column = 0; column < CellManager.cells[row].length; column++) {
-                var cell = CellManager.cells[row][column];
+        for (var row = 0; row < BoardManager.cells.length; row++) {
+            for (var column = 0; column < BoardManager.cells[row].length; column++) {
+                var cell = BoardManager.cells[row][column];
                 if (
                     inRange(x, cell.xCoord, cell.xCoord + cell.size) &&
                     inRange(y, cell.yCoord, cell.yCoord + cell.size)
@@ -53,7 +62,6 @@ class CellManager {
                     cell.changeStatus();
                     this.notifyNeighbours(cell);
                     console.log('cell status is alive: ' + cell.isAlive);
-                    (cell.isAlive) ? cell.draw(ctx) : cell.clear(ctx);
                     break;
                 }
             }
@@ -61,22 +69,22 @@ class CellManager {
     }
 
     notifyNeighbours(cell) {
-        cell.neighbours.forEach(function(neighbour) {
+        cell.neighbours.forEach(function (neighbour) {
             (cell.isAlive) ? neighbour.nearbyCells++ : neighbour.nearbyCells--;
-            console.log('This cell now has ' + neighbour.nearbyCells +' neighbours alive');
+            console.log('This cell now has ' + neighbour.nearbyCells + ' neighbours alive');
         });
     }
 
     setNeighbours() {
-        var rowsLimit = CellManager.cells.length - 1;
-        var columnsLimit = CellManager.cells[0].length - 1;
+        var rowsLimit = BoardManager.cells.length - 1;
+        var columnsLimit = BoardManager.cells[0].length - 1;
 
-        for (var row = 0; row < CellManager.cells.length; row++) {
+        for (var row = 0; row < BoardManager.cells.length; row++) {
             var firstRow = clamp(row - 1, 0, rowsLimit);
             var lastRow = clamp(row + 1, 0, rowsLimit);
 
-            for (var column = 0; column < CellManager.cells[row].length; column++) {
-                var cell = CellManager.cells[row][column];
+            for (var column = 0; column < BoardManager.cells[row].length; column++) {
+                var cell = BoardManager.cells[row][column];
 
                 var firstColumn = clamp(column - 1, 0, columnsLimit);
                 var lastColumn = clamp(column + 1, 0, columnsLimit);
@@ -87,27 +95,61 @@ class CellManager {
 
         function fillNeighboursArray() {
             for (var i = firstRow; i <= lastRow; i++) {
-
                 for (var j = firstColumn; j <= lastColumn; j++) {
                     //The cell does not have to count hiself as a neighbour
-                    if (CellManager.cells[row][column] !== CellManager.cells[i][j])
-                        cell.neighbours.push(CellManager.cells[i][j]);
+                    if (BoardManager.cells[row][column] !== BoardManager.cells[i][j])
+                        cell.neighbours.push(BoardManager.cells[i][j]);
                 }
+            }
+        }
+    }
+
+    nextGeneration() {
+        console.log('Next generation created');
+        var changedStatus = [];
+        for (var row = 0; row < BoardManager.cells.length; row++) {
+            for (var column = 0; column < BoardManager.cells[row].length; column++) {
+                var cell = BoardManager.cells[row][column];
+                var neighbours = cell.nearbyCells;
+                var oldStatus = cell.isAlive;
+                checkRules();
+                //Notify only on status changed
+                if (oldStatus !== cell.isAlive) {
+                    changedStatus.push(cell);
+                }
+            }
+        }
+        
+        changedStatus.forEach(function(cell) {
+            this.notifyNeighbours(cell);
+        },this);
+
+        function checkRules() {
+            if (cell.isAlive) {
+                if (neighbours <= 1) {
+                    cell.changeStatus();
+                }
+                if (neighbours >= 4) {
+                    cell.changeStatus();
+                }
+            } else {
+                if (neighbours === 3)
+                    cell.changeStatus();
             }
         }
     }
 }
 
-CellManager.cells = [];
+BoardManager.cells = [];
 
-var cellManager = new CellManager();
+var manager = new BoardManager();
 
 window.onload = function init() {
     canvas = document.querySelector('#board');
     canvas.addEventListener('click', mouseCliked);
 
     var btnNext = document.querySelector('#btnNext');
-    // btnNext.onclick = cellManager.next();
+    btnNext.addEventListener('click', next);
 
     w = canvas.width;
     h = canvas.height;
@@ -117,6 +159,10 @@ window.onload = function init() {
     drawGrid(cellSize);
 
     createAllCells(cellSize);
+}
+
+function next() {
+    manager.nextGeneration();
 }
 
 function drawGrid(sqrSize) {
@@ -143,15 +189,15 @@ function createAllCells(cellSize) {
             var cell = new Cell(i, j, cellSize);
             cellsRow.push(cell);
         }
-        cellManager.add(cellsRow);
+        manager.add(cellsRow);
     }
-    cellManager.setNeighbours();
+    manager.setNeighbours();
 }
 
 function mouseCliked(evt) {
     var mousePos = getMousePos(canvas, evt);
     console.log('Mouse clicked in position x: ' + mousePos.x + ', y: ' + mousePos.y);
-    cellManager.cellClicked(mousePos.x, mousePos.y);
+    manager.cellClicked(mousePos.x, mousePos.y);
 }
 
 function getMousePos(canvas, evt) {
