@@ -1,4 +1,4 @@
-var canvas, ctx, w, h;
+var canvas, ctx;//, w, h;
 var cellSize = 25;
 var isPlaying = false;
 
@@ -35,8 +35,9 @@ class Cell {
 }
 
 class BoardManager {
-    constructor(ctx) {
+    constructor(ctx, cellSize) {
         this.ctx = ctx;
+        this.cellSize = cellSize;
     }
 
     add(cell) {
@@ -44,54 +45,58 @@ class BoardManager {
     }
 
     cellClicked(x, y) {
-        for (var row = 0; row < BoardManager.cells.length; row++) {
-            for (var column = 0; column < BoardManager.cells[row].length; column++) {
-                var cell = BoardManager.cells[row][column];
+        var row, column, cell;
+
+        for (row = 0; row < BoardManager.cells.length; row++) {
+            for (column = 0; column < BoardManager.cells[row].length; column++) {
+                cell = BoardManager.cells[row][column];
                 if (
                     inRange(x, cell.xCoord, cell.xCoord + cell.size) &&
                     inRange(y, cell.yCoord, cell.yCoord + cell.size)
                 ) {
                     console.log('cell clicked found');
                     console.log('Cell array row: ' + row + ', column: ' + column);
-                    console.log('This cell has ' + cell.aroundCells.length + ' neighbours');
+                    console.log('This cell has ' + cell.aroundCells.length + ' cells around');
                     cell.changeStatus();
                     this.notifyNeighbours(cell);
-                    console.log('cell status is alive: ' + cell.isAlive);
+                    console.log('cell status is alive: ' + cell.isAlive +'\n\n');
                     break;
                 }
             }
         }
     }
 
+    //Change to notify status
     notifyNeighbours(cell) {
         cell.aroundCells.forEach(function (neighbour) {
             (cell.isAlive) ? neighbour.neighbours++ : neighbour.neighbours--;
         });
     }
 
-    setNeighbours() {
+    setAroundCells() {
         var rowsLimit = BoardManager.cells.length - 1;
         var columnsLimit = BoardManager.cells[0].length - 1;
+        var firstRow, lastRow;
+        var firstColumn, lastColumn;
 
-        for (var row = 0; row < BoardManager.cells.length; row++) {
-            var firstRow = clamp(row - 1, 0, rowsLimit);
-            var lastRow = clamp(row + 1, 0, rowsLimit);
+        BoardManager.cells.forEach(function (row, rowIndex) {
+            firstRow = clamp(rowIndex - 1, 0, rowsLimit);
+            lastRow = clamp(rowIndex + 1, 0, rowsLimit);
 
-            for (var column = 0; column < BoardManager.cells[row].length; column++) {
-                var cell = BoardManager.cells[row][column];
+            row.forEach(function (cell, columnIndex) {
+                firstColumn = clamp(columnIndex - 1, 0, columnsLimit);
+                lastColumn = clamp(columnIndex + 1, 0, columnsLimit);
 
-                var firstColumn = clamp(column - 1, 0, columnsLimit);
-                var lastColumn = clamp(column + 1, 0, columnsLimit);
+                fillAroundCellsArray(cell);
+            });
+        });
 
-                fillNeighboursArray();
-            }
-        }
-
-        function fillNeighboursArray() {
-            for (var i = firstRow; i <= lastRow; i++) {
-                for (var j = firstColumn; j <= lastColumn; j++) {
+        function fillAroundCellsArray(cell) {
+            var i, j;
+            for (i = firstRow; i <= lastRow; i++) {
+                for (j = firstColumn; j <= lastColumn; j++) {
                     //The cell does not have to count hiself as a neighbour
-                    if (BoardManager.cells[row][column] !== BoardManager.cells[i][j])
+                    if (cell !== BoardManager.cells[i][j])
                         cell.aroundCells.push(BoardManager.cells[i][j]);
                 }
             }
@@ -99,49 +104,52 @@ class BoardManager {
     }
 
     nextGeneration() {
-        console.log('Next generation created');
+        console.log('Next generation created \n\n');
         var changedStatus = [];
-        for (var row = 0; row < BoardManager.cells.length; row++) {
-            for (var column = 0; column < BoardManager.cells[row].length; column++) {
-                var cell = BoardManager.cells[row][column];
-                var neighbours = cell.neighbours;
+
+        BoardManager.cells.forEach(function (row) {
+            row.forEach(function (cell) {
                 var oldStatus = cell.isAlive;
-                checkRules();
+                checkRules(cell);
                 //Notify only on status changed
                 if (oldStatus !== cell.isAlive) {
                     changedStatus.push(cell);
                 }
-            }
-        }
+            });
+        });
 
         changedStatus.forEach(function (cell) {
             this.notifyNeighbours(cell);
         }, this);
 
-        function checkRules() {
+        function checkRules(cell) {
             if (cell.isAlive) {
-                if (neighbours <= 1) {
+                if (cell.neighbours <= 1) {
                     cell.changeStatus();
                 }
-                if (neighbours >= 4) {
+                if (cell.neighbours >= 4) {
                     cell.changeStatus();
                 }
             } else {
-                if (neighbours === 3)
+                if (cell.neighbours === 3)
                     cell.changeStatus();
             }
         }
     }
 
-    drawGrid(sqrSize) {
+    drawGrid() {
+        var h = ctx.canvas.height;
+        var w = ctx.canvas.width;
+        var x = cellSize, y = cellSize;
+
         ctx.save();
         ctx.lineWidth = 2;
-        for (var x = sqrSize; x <= w - sqrSize; x += sqrSize) {
+        for (x = cellSize; x <= w - cellSize; x += cellSize) {
             ctx.moveTo(x, 0);
             ctx.lineTo(x, h);
         }
 
-        for (var y = sqrSize; y <= h - sqrSize; y += sqrSize) {
+        for (y = cellSize; y <= h - cellSize; y += cellSize) {
             ctx.moveTo(0, y);
             ctx.lineTo(w, y)
         }
@@ -151,29 +159,33 @@ class BoardManager {
         ctx.restore;
     }
 
-    createAllCells(cellSize) {
-        for (var j = 0; j <= h - cellSize; j += cellSize) {
+    createAllCells() {
+        var i, j;
+        for (j = 0; j <= ctx.canvas.height - cellSize; j += cellSize) {
             var cellsRow = []
-            for (var i = 0; i <= w - cellSize; i += cellSize) {
+            for (i = 0; i <= ctx.canvas.width - cellSize; i += cellSize) {
                 var cell = new Cell(i, j, cellSize);
                 cellsRow.push(cell);
             }
             this.add(cellsRow);
         }
-        this.setNeighbours();
+        this.setAroundCells();
     }
 
     clearBoard() {
+        var h = ctx.canvas.height;
+        var w = ctx.canvas.width;
+
         ctx.clearRect(0, 0, w, h);
-        this.drawGrid(cellSize);
+        this.drawGrid();
         BoardManager.cells = [];
-        this.createAllCells(cellSize);
+        this.createAllCells();
     }
 }
 
 BoardManager.cells = [];
 
-var manager = new BoardManager(ctx);
+var manager = new BoardManager(ctx, cellSize);
 
 window.onload = function init() {
     canvas = document.querySelector('#board');
@@ -216,7 +228,7 @@ function startStopAnimation(evt) {
 
 function mouseCliked(evt) {
     var mousePos = getMousePos(canvas, evt);
-    console.log('Mouse clicked in position x: ' + mousePos.x + ', y: ' + mousePos.y);
+    console.log('Mouse clicked in position x: ' + mousePos.x + ', y: ' + mousePos.y +'\n\n');
     manager.cellClicked(mousePos.x, mousePos.y);
 }
 
