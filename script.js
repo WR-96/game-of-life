@@ -1,15 +1,15 @@
-// TODO make a button to clear the canvas and kill all the cells on the board
 var canvas, ctx, w, h;
 var cellSize = 25;
+var isPlaying = false;
 
 class Cell {
-    constructor(xCoord, yCoord, size, isAlive = false, nearbyCells = 0, neighbours = []) {
+    constructor(xCoord, yCoord, size, isAlive = false, neighbours = 0, aroundCells = []) {
         this.xCoord = xCoord;
         this.yCoord = yCoord;
         this.size = size;
         this.isAlive = isAlive;
-        this.nearbyCells = nearbyCells;
         this.neighbours = neighbours;
+        this.aroundCells = aroundCells;
     }
 
     draw(ctx) {
@@ -53,7 +53,7 @@ class BoardManager {
                 ) {
                     console.log('cell clicked found');
                     console.log('Cell array row: ' + row + ', column: ' + column);
-                    console.log('This cell has ' + cell.neighbours.length + ' neighbours');
+                    console.log('This cell has ' + cell.aroundCells.length + ' neighbours');
                     cell.changeStatus();
                     this.notifyNeighbours(cell);
                     console.log('cell status is alive: ' + cell.isAlive);
@@ -64,8 +64,8 @@ class BoardManager {
     }
 
     notifyNeighbours(cell) {
-        cell.neighbours.forEach(function (neighbour) {
-            (cell.isAlive) ? neighbour.nearbyCells++ : neighbour.nearbyCells--;
+        cell.aroundCells.forEach(function (neighbour) {
+            (cell.isAlive) ? neighbour.neighbours++ : neighbour.neighbours--;
         });
     }
 
@@ -92,7 +92,7 @@ class BoardManager {
                 for (var j = firstColumn; j <= lastColumn; j++) {
                     //The cell does not have to count hiself as a neighbour
                     if (BoardManager.cells[row][column] !== BoardManager.cells[i][j])
-                        cell.neighbours.push(BoardManager.cells[i][j]);
+                        cell.aroundCells.push(BoardManager.cells[i][j]);
                 }
             }
         }
@@ -104,7 +104,7 @@ class BoardManager {
         for (var row = 0; row < BoardManager.cells.length; row++) {
             for (var column = 0; column < BoardManager.cells[row].length; column++) {
                 var cell = BoardManager.cells[row][column];
-                var neighbours = cell.nearbyCells;
+                var neighbours = cell.neighbours;
                 var oldStatus = cell.isAlive;
                 checkRules();
                 //Notify only on status changed
@@ -135,21 +135,22 @@ class BoardManager {
 
     drawGrid(sqrSize) {
         ctx.save();
+        ctx.lineWidth = 2;
         for (var x = sqrSize; x <= w - sqrSize; x += sqrSize) {
             ctx.moveTo(x, 0);
             ctx.lineTo(x, h);
         }
-    
+
         for (var y = sqrSize; y <= h - sqrSize; y += sqrSize) {
             ctx.moveTo(0, y);
             ctx.lineTo(w, y)
         }
-    
+
         ctx.strokeStyle = '#00008B';
         ctx.stroke();
         ctx.restore;
     }
-    
+
     createAllCells(cellSize) {
         for (var j = 0; j <= h - cellSize; j += cellSize) {
             var cellsRow = []
@@ -184,6 +185,9 @@ window.onload = function init() {
     var btnClear = document.querySelector('#btnClear');
     btnClear.addEventListener('click', manager.clearBoard.bind(manager));
 
+    var btnAnimate = document.querySelector('#btnPlay');
+    btnAnimate.addEventListener('click', startStopAnimation);
+
     w = canvas.width;
     h = canvas.height;
 
@@ -194,7 +198,21 @@ window.onload = function init() {
     manager.createAllCells(cellSize);
 }
 
+function startStopAnimation(evt) {
+    isPlaying = !isPlaying;
+    evt.target.innerHTML = (isPlaying) ? 'Stop' : 'Start';
+    var animation = setInterval(frame, 500);
 
+
+    function frame() {
+
+        if (isPlaying) {
+            manager.nextGeneration();
+        } else {
+            clearInterval(animation);
+        }
+    }
+}
 
 function mouseCliked(evt) {
     var mousePos = getMousePos(canvas, evt);
