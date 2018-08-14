@@ -1,26 +1,27 @@
-var ctx;
-var cellSize = 25;
 var isPlaying = false;
 
-
 window.onload = function init() {
-    var canvas = document.querySelector('#board');
-    canvas.addEventListener('click', function (evt) {mouseCliked(evt,manager);});
-    
-    ctx = canvas.getContext('2d');
-    
-    var manager = new BoardManager(ctx, cellSize);
+    var cellSize = 25;
+    var canvas, ctx, manager;
+    var btnAnimate, btnClear, btnNext;
 
-    var btnNext = document.querySelector('#btnNext');
+    var canvas = document.querySelector('#board');
+    canvas.addEventListener('click', function (evt) { mouseCliked(evt, manager); });
+
+    ctx = canvas.getContext('2d');
+
+    manager = new BoardManager(ctx, cellSize);
+
+    btnNext = document.querySelector('#btnNext');
     btnNext.addEventListener('click', manager.nextGeneration.bind(manager));
 
-    var btnClear = document.querySelector('#btnClear');
+    btnClear = document.querySelector('#btnClear');
     btnClear.addEventListener('click', manager.clearBoard.bind(manager));
 
-    var btnAnimate = document.querySelector('#btnPlay');
-    btnAnimate.addEventListener('click', function (evt) {startStopAnimation(evt,manager)});
+    btnAnimate = document.querySelector('#btnPlay');
+    btnAnimate.addEventListener('click', function (evt) { startStopAnimation(evt, manager) });
 
-    manager.drawGrid(cellSize);
+    manager.drawGrid();
     manager.createAllCells(cellSize);
 }
 
@@ -38,9 +39,9 @@ function startStopAnimation(evt, manager) {
     }
 }
 
-function mouseCliked(evt,manager) {
+function mouseCliked(evt, manager) {
     var mousePos = getMousePos(evt);
-    console.log('Mouse clicked in position x: ' + mousePos.x + ', y: ' + mousePos.y +'\n\n');
+    console.log('Mouse clicked in position x: ' + mousePos.x + ', y: ' + mousePos.y + '\n\n');
     manager.cellClicked(mousePos.x, mousePos.y);
 }
 

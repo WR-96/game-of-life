@@ -23,7 +23,7 @@ class Cell {
         ctx.restore();
     }
 
-    changeStatus() {
+    changeStatus(ctx) {
         this.isAlive = !this.isAlive;
         (this.isAlive) ? this.draw(ctx) : this.clear(ctx);
     }

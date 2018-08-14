@@ -21,8 +21,8 @@ class BoardManager {
                     console.log('cell clicked found');
                     console.log('Cell array row: ' + row + ', column: ' + column);
                     console.log('This cell has ' + cell.aroundCells.length + ' cells around');
-                    cell.changeStatus();
-                    this.notifyNeighbours(cell);
+                    cell.changeStatus(this.ctx);
+                    this.notifyCellStatus(cell);
                     console.log('cell status is alive: ' + cell.isAlive +'\n\n');
                     break;
                 }
@@ -30,8 +30,7 @@ class BoardManager {
         }
     }
 
-    //Change to notify status
-    notifyNeighbours(cell) {
+    notifyCellStatus(cell) {
         cell.aroundCells.forEach(function (neighbour) {
             (cell.isAlive) ? neighbour.neighbours++ : neighbour.neighbours--;
         });
@@ -68,8 +67,9 @@ class BoardManager {
     }
 
     nextGeneration() {
-        console.log('Next generation created \n\n');
         var changedStatus = [];
+        var self = this;
+        console.log('Next generation created \n\n');
 
         BoardManager.cells.forEach(function (row) {
             row.forEach(function (cell) {
@@ -83,28 +83,27 @@ class BoardManager {
         });
 
         changedStatus.forEach(function (cell) {
-            this.notifyNeighbours(cell);
-        }, this);
+           self.notifyCellStatus(cell);
+        });
 
         function checkRules(cell) {
             if (cell.isAlive) {
-                if (cell.neighbours <= 1) {
-                    cell.changeStatus();
-                }
-                if (cell.neighbours >= 4) {
-                    cell.changeStatus();
+                if (cell.neighbours <= 1 || cell.neighbours >= 4) {
+                    cell.changeStatus(self.ctx);
                 }
             } else {
                 if (cell.neighbours === 3)
-                    cell.changeStatus();
+                    cell.changeStatus(self.ctx);
             }
         }
     }
 
     drawGrid() {
-        var h = ctx.canvas.height;
+        var ctx = this.ctx;
+        var cellSize = this.cellSize;
+        var h = this.ctx.canvas.height;
         var w = ctx.canvas.width;
-        var x = cellSize, y = cellSize;
+        var x, y;
 
         ctx.save();
         ctx.lineWidth = 2;
@@ -124,6 +123,9 @@ class BoardManager {
     }
 
     createAllCells() {
+        var ctx = this.ctx;
+        var cellSize = this.cellSize;
+
         var i, j;
         for (j = 0; j <= ctx.canvas.height - cellSize; j += cellSize) {
             var cellsRow = []
@@ -137,6 +139,7 @@ class BoardManager {
     }
 
     clearBoard() {
+        var ctx = this.ctx;
         var h = ctx.canvas.height;
         var w = ctx.canvas.width;
 
