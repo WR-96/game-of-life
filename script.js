@@ -32,15 +32,10 @@ class Cell {
         (this.isAlive) ? this.draw(ctx) : this.clear(ctx);
     }
 
-    setStatus(alive) {
-        this.isAlive = alive;
-        (this.isAlive) ? this.draw(ctx) : this.clear(ctx);
-    }
-
 }
 
 class BoardManager {
-    constructor (ctx) {
+    constructor(ctx) {
         this.ctx = ctx;
     }
 
@@ -71,7 +66,6 @@ class BoardManager {
     notifyNeighbours(cell) {
         cell.neighbours.forEach(function (neighbour) {
             (cell.isAlive) ? neighbour.nearbyCells++ : neighbour.nearbyCells--;
-            console.log('This cell now has ' + neighbour.nearbyCells + ' neighbours alive');
         });
     }
 
@@ -119,10 +113,10 @@ class BoardManager {
                 }
             }
         }
-        
-        changedStatus.forEach(function(cell) {
+
+        changedStatus.forEach(function (cell) {
             this.notifyNeighbours(cell);
-        },this);
+        }, this);
 
         function checkRules() {
             if (cell.isAlive) {
@@ -138,61 +132,69 @@ class BoardManager {
             }
         }
     }
+
+    drawGrid(sqrSize) {
+        ctx.save();
+        for (var x = sqrSize; x <= w - sqrSize; x += sqrSize) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+        }
+    
+        for (var y = sqrSize; y <= h - sqrSize; y += sqrSize) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y)
+        }
+    
+        ctx.strokeStyle = '#00008B';
+        ctx.stroke();
+        ctx.restore;
+    }
+    
+    createAllCells(cellSize) {
+        for (var j = 0; j <= h - cellSize; j += cellSize) {
+            var cellsRow = []
+            for (var i = 0; i <= w - cellSize; i += cellSize) {
+                var cell = new Cell(i, j, cellSize);
+                cellsRow.push(cell);
+            }
+            this.add(cellsRow);
+        }
+        this.setNeighbours();
+    }
+
+    clearBoard() {
+        ctx.clearRect(0, 0, w, h);
+        this.drawGrid(cellSize);
+        BoardManager.cells = [];
+        this.createAllCells(cellSize);
+    }
 }
 
 BoardManager.cells = [];
 
-var manager = new BoardManager();
+var manager = new BoardManager(ctx);
 
 window.onload = function init() {
     canvas = document.querySelector('#board');
     canvas.addEventListener('click', mouseCliked);
 
     var btnNext = document.querySelector('#btnNext');
-    btnNext.addEventListener('click', next);
+    btnNext.addEventListener('click', manager.nextGeneration.bind(manager));
+
+    var btnClear = document.querySelector('#btnClear');
+    btnClear.addEventListener('click', manager.clearBoard.bind(manager));
 
     w = canvas.width;
     h = canvas.height;
 
     ctx = canvas.getContext('2d');
 
-    drawGrid(cellSize);
+    manager.drawGrid(cellSize);
 
-    createAllCells(cellSize);
+    manager.createAllCells(cellSize);
 }
 
-function next() {
-    manager.nextGeneration();
-}
 
-function drawGrid(sqrSize) {
-    ctx.save();
-    for (var x = sqrSize; x <= w - sqrSize; x += sqrSize) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-    }
-
-    for (var y = sqrSize; y <= h - sqrSize; y += sqrSize) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y)
-    }
-
-    ctx.strokeStyle = '#00008B';
-    ctx.stroke();
-    ctx.restore;
-}
-
-function createAllCells(cellSize) {
-    for (var j = 0; j <= h - cellSize; j += cellSize) {
-        var cellsRow = []
-        for (var i = 0; i <= w - cellSize; i += cellSize) {
-            var cell = new Cell(i, j, cellSize);
-            cellsRow.push(cell);
-        }
-        manager.add(cellsRow);
-    }
-    manager.setNeighbours();
-}
 
 function mouseCliked(evt) {
     var mousePos = getMousePos(canvas, evt);
