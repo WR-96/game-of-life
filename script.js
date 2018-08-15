@@ -1,7 +1,7 @@
 var isPlaying = false;
 
 window.onload = function init() {
-    var cellSize = 25;
+    var cellSize = 24;
     var canvas, ctx, manager;
     var btnAnimate, btnClear, btnNext;
 
